@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -108,6 +109,8 @@ namespace GlobalSchedulerTest
 
 					await Task.Delay(100, cancelation.Token);
 
+					Debug.WriteLine($"[shwlee] Thread:{Thread.CurrentThread.ManagedThreadId}");
+
 					this.CheckTaskCanceled(cancelation);
 
 					List<ScheduledJob> jobs;
@@ -123,7 +126,7 @@ namespace GlobalSchedulerTest
 					}
 
 					// check and execute.
-					var now = DateTime.Now;
+
 					foreach (var job in jobs)
 					{
 						// 개별 job 이 수행되는 동안 Scheduling task 가 영향을 받지 않도록 한다.
@@ -144,6 +147,7 @@ namespace GlobalSchedulerTest
 			catch (Exception ex)
 			{
 				// TODO : need logging.
+				Debug.WriteLine(ex);
 			}
 		}
 
