@@ -21,6 +21,8 @@ namespace GlobalSchedulerTest
 
 		private object _syncBlock = new object();
 
+		private Func<DateTime> _getNow;
+
 		#endregion
 
 		#region Properties
@@ -54,8 +56,10 @@ namespace GlobalSchedulerTest
 				this._cancellationTokenSource = null;
 			}
 
+			this._getNow = this.GetCurrentNow;
+
 			this._cancellationTokenSource = new CancellationTokenSource();
-			this._schedulingTask = new Task(this.Scheduling, this._cancellationTokenSource);
+			this._schedulingTask = new Task(this.DoScheduling, this._cancellationTokenSource);
 			this._schedulingTask.Start();
 		}
 
@@ -78,12 +82,6 @@ namespace GlobalSchedulerTest
 			}
 		}
 
-		private uint IncrementCount()
-		{
-			var newValue = Interlocked.Increment(ref _idSequence);
-			return unchecked((uint)newValue);
-		}
-
 		public void Unregister(uint jobId)
 		{
 			this.Unregisterinternal(jobId);
@@ -94,7 +92,23 @@ namespace GlobalSchedulerTest
 			this.Unregister(job.Id);
 		}
 
-		private async void Scheduling(object cancelSource)
+		public void SetNowTime(Func<DateTime> getNow)
+		{
+			this._getNow = getNow;
+		}
+
+		private DateTime GetCurrentNow()
+		{
+			return DateTime.Now;
+		}
+
+		private uint IncrementCount()
+		{
+			var newValue = Interlocked.Increment(ref _idSequence);
+			return unchecked((uint)newValue);
+		}
+
+		private async void DoScheduling(object cancelSource)
 		{
 			if (!(cancelSource is CancellationTokenSource cancelation))
 			{
@@ -107,7 +121,7 @@ namespace GlobalSchedulerTest
 				{
 					this.CheckTaskCanceled(cancelation);
 
-					await Task.Delay(100, cancelation.Token);
+					await Task.Delay(85, cancelation.Token); // Windows 기본 타이머 15.625ms 간격을 제외한 100ms 단위.
 
 					Debug.WriteLine($"[shwlee] Thread:{Thread.CurrentThread.ManagedThreadId}");
 
@@ -126,21 +140,12 @@ namespace GlobalSchedulerTest
 					}
 
 					// check and execute.
-
+					//var now = DateTime.Now;
+					var now = this._getNow?.Invoke() ?? this.GetCurrentNow();
 					foreach (var job in jobs)
 					{
 						// 개별 job 이 수행되는 동안 Scheduling task 가 영향을 받지 않도록 한다.
-						Task.Run(() =>
-						{
-
-							if (job.CanExecuteNow() == false)
-							{
-								return;
-							}
-
-							job?.ExecuteJob();
-
-						});
+						Task.Run(() => job.DoJob(now));
 					}
 				}
 			}

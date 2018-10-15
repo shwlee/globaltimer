@@ -11,21 +11,19 @@ namespace GlobalSchedulerTest
 
 		public bool UseTimeRange { get; set; }
 
-		public DateTime StartTime { get; set; }
+		public TimeSpan StartTime { get; set; }
 
-		public DateTime EndTime { get; set; }
+		public TimeSpan EndTime { get; set; }
 
 		public DayOfWeek[] Days { get; set; }
 
-		public override bool CanExecuteNow()
+		protected override bool CanExecute(DateTime now)
 		{
 			var last = this.LastExecutedTime;
 			if (last == default(DateTime))
 			{
 				return true;
 			}
-
-			var now = DateTime.Now;
 
 			var interval = this.Interval * this.Unit;
 			var gap = now - last;
@@ -43,7 +41,8 @@ namespace GlobalSchedulerTest
 				return true;
 			}
 
-			var between = now > this.StartTime && now < this.EndTime;
+			//var between = now > this.StartTime && now < this.EndTime;
+			var between = this.AtTime(this.StartTime, this.EndTime, now);
 			if (between == false)
 			{
 				return false;
@@ -64,6 +63,26 @@ namespace GlobalSchedulerTest
 			}
 
 			return true;
+		}
+
+		private bool AtTime(TimeSpan startTime, TimeSpan endTime, DateTime now)
+		{
+			var between = endTime - startTime;
+			if (default(TimeSpan) == between)
+			{
+				// start / end time에 값이 설정되어 있지 않으면 그냥 스케줄링한다.
+				return true;
+			}
+
+			var interval = this.Interval * this.Unit;
+			if (interval > between)
+			{
+				// interval 은 지정된 시간 간격보다 크면 안 된다.
+				return false;
+			}
+
+			// 시간, 분, 초 비교.
+			return now.TimeOfDay > startTime && now.TimeOfDay < endTime;
 		}
 	}
 }
