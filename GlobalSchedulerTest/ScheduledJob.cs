@@ -6,7 +6,7 @@ namespace GlobalSchedulerTest
 	{
 		public uint Id { get; internal set; }
 
-		public DateTime LastExecutedTime { get; set; }
+		public DateTime LastExecutedTime { get; internal set; }
 
 		public Action Execute { get; set; }
 

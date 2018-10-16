@@ -115,9 +115,9 @@ namespace GlobalSchedulerTest
 				return;
 			}
 
-			try
+			while (true)
 			{
-				while (true)
+				try
 				{
 					this.CheckTaskCanceled(cancelation);
 
@@ -133,14 +133,8 @@ namespace GlobalSchedulerTest
 					{
 						jobs = this._jobs.ToList();
 					}
-
-					if (jobs == null)
-					{
-						throw new NullReferenceException("There is nothing that registered scheduled job.");
-					}
-
+					
 					// check and execute.
-					//var now = DateTime.Now;
 					var now = this._getNow?.Invoke() ?? this.GetCurrentNow();
 					foreach (var job in jobs)
 					{
@@ -148,11 +142,11 @@ namespace GlobalSchedulerTest
 						Task.Run(() => job.DoJob(now));
 					}
 				}
-			}
-			catch (Exception ex)
-			{
-				// TODO : need logging.
-				Debug.WriteLine(ex);
+				catch (Exception ex)
+				{
+					// TODO : need logging.
+					Debug.WriteLine(ex);
+				}
 			}
 		}
 
